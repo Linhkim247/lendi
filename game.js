@@ -3,7 +3,7 @@ let tycoonMoney = 1000;
 let incomePerSecond = 0;
 let tycoonInterval;
 let upgradeCost = 100;
-let progressBarMax = 100000000000; // 100 billion
+let progressBarMax = 10000000000000; // 100 billion
 
 // Variables for CrashX Game
 let betAmount = 0;

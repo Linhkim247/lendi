@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign up | Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: url(hinh-nen-phong-canh-anime-3.jpg);
+            background-size: cover;
+        }
+        .container {
+            width: 300px;
+            height: 300px;
+            padding: 20px;
+            border-radius: 8px;
+            background: transparent;
+            border:2px solid rgba(255,255,255,0.5);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 30px rgba(0 ,0 ,0 ,0.5);
+            position: relative;
+        }
+        #auth-form {
+            height: 200px;
+            display: grid;
+            place-items: center;
+        }
+        h2 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            height: 50px;
+            background:transparent;
+            outline: none;
+            border: 2px solid transparent;
+            padding: 5px;
+            box-sizing: border-box;
+            margin: 8px 0;
+            border-radius: 2rem;
+        }
+        input[type="password"]:focus {
+            border: 2px solid transparent;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); 
+            border-radius: 2rem;
+            transition: .5s ease;    
+        }
+        input[type="text"]:focus {
+            
+            border: 2px solid transparent;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); 
+            border-radius: 2rem;
+            transition:.5s ease;
+        }
+        input[type="submit"] {
+            width: 100px;
+            padding: 10px;
+            border:2px solid transparent;
+            color: black;
+            border-radius: 30px;
+            cursor: pointer;
+            background:transparent;
+            box-shadow: 0 4px 8px  rgba(0 ,0 ,0 ,0.5);
+            
+        }
+        input[type="submit"]:hover {
+            
+            transition: 0.5s ease;
+            color: white;
+            border:2px solid transparent;
+            backdrop-filter: blur(20px);
+            background: linear-gradient(to bottom, rgb(86, 223, 48),rgb(50, 216, 150));
+        }
+        #toggle-link {
+            text-align: center;
+            display: block;
+            margin-top: 10px;
+            color: black;
+            cursor: pointer;
+            position: relative;
+            bottom:-10px;
+        }
+        
+        input::placeholder {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="form-title">Register</h2>
+        <form id="auth-form">
+            <input type="text" id="username" name="username" placeholder="Username" required><br> 
+            <input type="password" id="password" name="password" placeholder="Password" required><br>
+            <input type="submit" value="Sign up">
+        </form>
+        <a id="toggle-link" class="toggle-link">You had an account? Login</a>
+    </div>
+
+    <script>
+        // Khởi tạo form đăng ký/đăng nhập
+        function initAuthForm(formId, usernameInputId, passwordInputId, formTitleId, toggleLinkId) {
+            const form = document.getElementById(formId);
+            const formTitle = document.getElementById(formTitleId);
+            const toggleLink = document.getElementById(toggleLinkId);
+            let isLogin = false;
+
+            // Chuyển đổi giữa đăng ký và đăng nhập
+            toggleLink.addEventListener('click', () => {
+                isLogin = !isLogin;
+                if (isLogin) {
+                    formTitle.textContent = 'Login';
+                    form.querySelector('input[type="submit"]').value = 'Login';
+                    toggleLink.textContent = 'Bạn chưa có tài khoản? Đăng ký';
+                } else {
+                    formTitle.textContent = 'Sign up';
+                    form.querySelector('input[type="submit"]').value = 'Sign up';
+                    toggleLink.textContent = 'Bạn đã có tài khoản? Đăng nhập';
+                }
+            });
+
+            // Xử lý sự kiện submit form
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const username = document.getElementById(usernameInputId).value;
+                const password = document.getElementById(passwordInputId).value;
+
+                if (isLogin) {
+                    // Kiểm tra thông tin đăng nhập
+                    const storedUser = JSON.parse(localStorage.getItem(username));
+                    if (storedUser && storedUser.password === password) {
+                        alert('Đăng nhập thành công!');
+                        window.location.href = 'shop.html';
+                    } else {
+                        alert('Tên người dùng hoặc mật khẩu không đúng!');
+                    }
+                } else {
+                    // Xử lý đăng ký
+                    if (localStorage.getItem(username)) {
+                        alert('Tên người dùng đã tồn tại!');
+                    } else {
+                        const user = {
+                            username: username,
+                            password: password
+                        };
+                        localStorage.setItem(username, JSON.stringify(user));
+                        alert('Đăng ký thành công! Bạn có thể đăng nhập bây giờ.');
+                        toggleLink.click(); // Tự động chuyển qua phần đăng nhập
+                    }
+                }
+            });
+        }
+
+        // Khởi tạo form
+        initAuthForm('auth-form', 'username', 'password', 'form-title', 'toggle-link');
+    </script>
+</body>
+</html>
