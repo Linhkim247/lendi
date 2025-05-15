@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Tùy chỉnh Giao Diện + Nội dung</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    label{
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input, select, button {
+      margin-top: 5px;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+
+    .preview-box {
+      padding: 20px;
+      border-radius: 10px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      min-height: 100px;
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Tùy chỉnh giao diện + nội dung</h1>
+
+  <div class="controls">
+    <label for="user-input">Nhập nội dung:</label>
+    <input type="text" id="user-input" placeholder="Nhập gì đó...">
+    <label for="bg-color">Màu nền</label>
+    <select name="background-color" id="bg-color">
+      <option value="red">red</option>
+      <option value="blue">blue</option>
+      <option value="green">green</option>
+      <option value="pink" selected>pink</option>
+    </select>
+    <label for="text-color">Màu chữ</label>
+    <select name="mauchu" id="text-color">
+      <option value="white">white</option>
+      <option value="black" selected>black</option>
+      <option value="red">red</option>
+      <option value="pink">pink</option>
+      <option value="blue">blue</option>
+      <option value="gray">gray</option>
+    </select>
+
+    <label for="font-select">Font chữ:</label>
+    <select id="font-select">
+      <option value="Arial">Arial</option>
+      <option value="Georgia">Georgia</option>
+      <option value="Courier New">Courier New</option>
+      <option value="Times New Roman">Times New Roman</option>
+      <option value="Comic Sans MS" selected>Comic Sans MS</option>
+    </select>
+    <label for="size-chu">Size chữ</label>
+    <input type="text" id="text-size" placeholder="nhớ thêm px cuối nha ">
+    <label for="display">Cach hien thi</label>
+    <select id="text-display">
+      <option value="center">center</option>
+      <option value="top">top</option>
+      <option value="bottom">bottom</option>
+    </select>
+
+    <button id="apply-btn">Hiển thị nội dung</button>
+  </div>
+
+  <div class="preview-box" id="preview">
+    <p>👉 Nội dung bạn nhập sẽ hiển thị ở đây.</p>
+  </div>
+
+  <script>
+    const bgColorInput = document.getElementById('bg-color');
+    const textColorInput = document.getElementById('text-color');
+    const fontSelect = document.getElementById('font-select');
+    const userInput = document.getElementById('user-input');
+    const preview = document.getElementById('preview');
+    const textSizeInput = document.getElementById('text-size');
+    const textDisplayInput = document.getElementById('text-display');
+    const applyBtn = document.getElementById('apply-btn');
+
+    applyBtn.addEventListener('click', () => {
+      const text = userInput.value || '👋CanhDev👋';
+      preview.innerText = text + "  " + "(CanhDev xin cảm ơn!!)";
+      preview.style.backgroundColor = bgColorInput.value;
+      preview.style.color = textColorInput.value;
+      preview.style.fontSize = textSizeInput.value;
+      preview.style.textAlign = textDisplayInput.value;
+      preview.style.fontFamily = fontSelect.value;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang Người Dùng</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4caf50;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1000;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  </style>
+</head>
+<body>
+  <h2>Trang Người Dùng</h2>
+
+  <input type="text" id="yeuCau" placeholder="Nhập yêu cầu..." />
+  <button onclick="guiYeuCau()">Gửi yêu cầu</button>
+
+  <table id="bang">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nội dung</th>
+        <th>Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody id="noiDungBang"></tbody>
+  </table>
+
+  <script>
+    function guiYeuCau() {
+      const noiDung = document.getElementById("yeuCau").value.trim();
+      if (!noiDung) return alert("Vui lòng nhập yêu cầu!");
+  
+      const ds = JSON.parse(localStorage.getItem("yeuCauList") || "[]");
+  
+      const id = Date.now(); // dùng timestamp làm ID
+      ds.push({
+        id,
+        noiDung,
+        trangThai: "pending"
+      });
+  
+      localStorage.setItem("yeuCauList", JSON.stringify(ds));
+      hienBang();
+    }
+  
+    function hienBang() {
+      const ds = JSON.parse(localStorage.getItem("yeuCauList") || "[]");
+      const tbody = document.getElementById("noiDungBang");
+      tbody.innerHTML = "";
+  
+      ds.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.noiDung}</td>
+          <td>${hienTrangThai(item.trangThai)}</td>
+        `;
+        tbody.appendChild(row);
+  
+        if (item.trangThai === "approved") {
+          hienToast("✅ Yêu cầu đã được duyệt thành công!");
+        }
+      });
+    }
+  
+    function hienTrangThai(tt) {
+      switch (tt) {
+        case "pending": return "⏳ Đang chờ duyệt";
+        case "approved": return "✅ Đã duyệt";
+        case "rejected": return "❌ Từ chối";
+        default: return tt;
+      }
+    }
+  
+    function hienToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerText = message;
+  
+      document.body.appendChild(toast);
+  
+      setTimeout(() => {
+        toast.classList.add("show");
+      }, 100); // Thêm hiệu ứng xuất hiện
+  
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300); // Xóa khỏi DOM sau khi ẩn
+      }, 3000); // Hiển thị trong 3 giây
+    }
+  
+    window.addEventListener("storage", () => hienBang());
+    hienBang();
+  </script>
+</body>
+</html>

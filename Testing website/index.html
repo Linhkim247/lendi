@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini Blog</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f8f8f8; }
+    input, textarea, button { width: 100%; margin: 5px 0; padding: 10px; }
+    .post { background: white; padding: 10px; margin: 10px 0; border-left: 5px solid #2d89ef; }
+    .post-header { display: flex; align-items: center; }
+    .post-header img { border-radius: 50%; width: 40px; height: 40px; margin-right: 10px; }
+    .post-content { margin-top: 10px; }
+    .post-actions { display: flex; justify-content: space-between; margin-top: 10px; }
+    .post-actions button { padding: 5px 10px; border: none; background-color: #2d89ef; color: white; cursor: pointer; }
+    .post-actions button:hover { background-color: #1a6bbd; }
+    .comment-section { margin-top: 20px; }
+    .comment { background: #f1f1f1; padding: 5px; margin-top: 5px; border-radius: 5px; }
+    .comment textarea { width: 90%; }
+  </style>
+</head>
+<body>
+
+<h2>Mini Blog</h2>
+
+<div id="auth">
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="register()">Đăng ký</button>
+  <button onclick="login()">Đăng nhập</button>
+</div>
+
+<div id="main" style="display:none;">
+  <p id="welcome"></p>
+  <img id="profile-pic" src="" alt="Avatar" style="border-radius: 50%; width: 40px; height: 40px; display: inline-block; margin-right: 10px;">
+  <button onclick="logout()">Đăng xuất</button>
+
+  <h3>Viết bài mới</h3>
+  <input id="title" placeholder="Tiêu đề bài viết" />
+  <textarea id="content" rows="4" placeholder="Nội dung..."></textarea>
+  <button onclick="post()">Đăng bài</button>
+
+  <h3>Tất cả bài viết</h3>
+  <div id="posts"></div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSnKjwZcYtxNP6MPbJhwHnYzpMcInUFIM",
+    authDomain: "my-blog-d10de.firebaseapp.com",
+    projectId: "my-blog-d10de",
+    storageBucket: "my-blog-d10de.firebasestorage.app",
+    messagingSenderId: "1040033908209",
+    appId: "1:1040033908209:web:6a93371ba83d784b9e3050",
+    measurementId: "G-4HHYC89RRV"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  function register() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => alert("Đăng ký thành công"))
+      .catch(err => alert(err.message));
+  }
+
+  function login() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => alert("Đăng nhập thành công"))
+      .catch(err => alert(err.message));
+  }
+
+  function logout() {
+    auth.signOut().then(() => {
+      authDiv.style.display = "block";
+      main.style.display = "none";
+    });
+  }
+
+  function post() {
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+    if (!title || !content) return alert("Không được để trống");
+
+    db.collection("posts").add({
+      title,
+      content,
+      author: auth.currentUser.email,
+      authorPhoto: auth.currentUser.photoURL,
+      created: firebase.firestore.FieldValue.serverTimestamp(),
+      likes: 0,
+      comments: []
+    }).then(() => {
+      titleInput.value = "";
+      contentInput.value = "";
+    });
+  }
+
+  function loadPosts() {
+    db.collection("posts").orderBy("created", "desc").onSnapshot(snapshot => {
+      posts.innerHTML = "";
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `
+          <div class="post-header">
+            <img src="${p.authorPhoto || ''}" alt="Avatar">
+            <span>${p.author}</span>
+          </div>
+          <div class="post-content">
+            <h4>${p.title}</h4>
+            <p>${p.content}</p>
+          </div>
+          <div class="post-actions">
+            <button onclick="likePost('${doc.id}')">Like (${p.likes})</button>
+            <button onclick="showComments('${doc.id}')">Bình luận</button>
+            <button onclick="sharePost('${doc.id}')">Chia sẻ</button>
+          </div>
+          <div id="comments-${doc.id}" class="comment-section"></div>
+        `;
+        posts.appendChild(div);
+      });
+    });
+  }
+
+  function likePost(postId) {
+    const postRef = db.collection("posts").doc(postId);
+    postRef.update({
+      likes: firebase.firestore.FieldValue.increment(1)
+    });
+  }
+
+  function showComments(postId) {
+    const commentsDiv = document.getElementById(`comments-${postId}`);
+    commentsDiv.innerHTML = `
+      <textarea id="comment-input-${postId}" placeholder="Viết bình luận..."></textarea>
+      <button onclick="submitComment('${postId}')">Gửi bình luận</button>
+    `;
+  }
+
+  function submitComment(postId) {
+    const commentInput = document.getElementById(`comment-input-${postId}`);
+    const comment = commentInput.value.trim();
+    if (!comment) return alert("Bình luận không được để trống");
+
+    const postRef = db.collection("posts").doc(postId);
+    postRef.update({
+      comments: firebase.firestore.FieldValue.arrayUnion(comment)
+    }).then(() => {
+      commentInput.value = "";
+      loadPosts();  // Reload posts to show updated comments
+    });
+  }
+
+  function sharePost(postId) {
+    const postRef = db.collection("posts").doc(postId);
+    postRef.get().then(doc => {
+      const post = doc.data();
+      const postUrl = `https://your-website-link.com/post/${postId}`;
+      const shareText = `Check out this post: ${post.title}\n${postUrl}`;
+      alert(shareText); // You can enhance this to share directly on social media
+    });
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      authDiv.style.display = "none";
+      main.style.display = "block";
+      welcome.innerText = "Chào, " + user.email;
+      profilePic.src = user.photoURL || 'default-avatar.jpg';
+      loadPosts();
+    } else {
+      authDiv.style.display = "block";
+      main.style.display = "none";
+    }
+  });
+
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const titleInput = document.getElementById("title");
+  const contentInput = document.getElementById("content");
+  const authDiv = document.getElementById("auth");
+  const main = document.getElementById("main");
+  const welcome = document.getElementById("welcome");
+  const profilePic = document.getElementById("profile-pic");
+  const posts = document.getElementById("posts");
+</script>
+
+</body>
+</html>

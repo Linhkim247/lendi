@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang Quản Trị</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    button { margin: 2px; }
+  </style>
+</head>
+<body>
+  <h2>Trang Quản Trị</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nội dung</th>
+        <th>Trạng thái</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody id="noiDungBang"></tbody>
+  </table>
+
+  <script>
+    function hienBang() {
+      const ds = JSON.parse(localStorage.getItem("yeuCauList") || "[]");
+      const tbody = document.getElementById("noiDungBang");
+      tbody.innerHTML = "";
+
+      ds.forEach((item, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.noiDung}</td>
+          <td>${hienTrangThai(item.trangThai)}</td>
+          <td>
+            ${item.trangThai === "pending" ? `
+              <button onclick="duyet(${item.id})">Duyệt</button>
+              <button onclick="tuChoi(${item.id})">Từ chối</button>
+            ` : "—"}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function duyet(id) {
+      capNhatTrangThai(id, "approved");
+    }
+
+    function tuChoi(id) {
+      capNhatTrangThai(id, "rejected");
+    }
+
+    function capNhatTrangThai(id, newStatus) {
+      const ds = JSON.parse(localStorage.getItem("yeuCauList") || "[]");
+      const index = ds.findIndex(item => item.id === id);
+      if (index !== -1) {
+        ds[index].trangThai = newStatus;
+        localStorage.setItem("yeuCauList", JSON.stringify(ds));
+        hienBang();
+      }
+    }
+
+    function hienTrangThai(tt) {
+      switch (tt) {
+        case "pending": return "⏳ Đang chờ duyệt";
+        case "approved": return "✅ Đã duyệt";
+        case "rejected": return "❌ Từ chối";
+        default: return tt;
+      }
+    }
+
+    window.addEventListener("storage", () => hienBang());
+    hienBang();
+  </script>
+</body>
+</html>

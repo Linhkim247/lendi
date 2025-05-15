@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Blog</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px auto; max-width: 900px; background: #f8f8f8; }
+    input, textarea, button { width: 100%; margin: 5px 0; padding: 10px; }
+    .post { background: white; padding: 10px; margin: 10px 0; border-left: 5px solid #2d89ef; }
+    .post-header { display: flex; align-items: center; }
+    .post-header img { border-radius: 50%; width: 40px; height: 40px; margin-right: 10px; }
+    .navbar { display: flex; justify-content: space-between; align-items: center; background-color: #2d89ef; padding: 10px; color: white; }
+    .navbar button { background: none; border: none; color: white; font-size: 16px; cursor: pointer; }
+    .navbar button:hover { background-color: #1a6bbd; }
+    .navbar a { color: white; text-decoration: none; font-size: 16px; }
+    .navbar a:hover { text-decoration: underline; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: #2d89ef; color: white; padding: 10px; border-radius: 5px; display: none; }
+    .tab { display: none; }
+    .active { display: block; }
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      .navbar button, .navbar a { font-size: 14px; }
+      .post { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Thanh công cụ -->
+<div class="navbar">
+  <a href="javascript:void(0)" onclick="showTab('posts')">Bài viết</a>
+  <a href="javascript:void(0)" onclick="showTab('settings')">Cài đặt</a>
+  <a href="javascript:void(0)" onclick="showTab('edit')">Chỉnh sửa thông tin</a>
+  <button onclick="logout()">Đăng xuất</button>
+</div>
+
+<!-- Trang chính -->
+<div id="auth-tab" class="tab active">
+  <h3>Đăng nhập / Đăng ký</h3>
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="login()">Đăng nhập</button>
+  <button onclick="register()">Đăng ký</button>
+</div>
+
+<div id="posts-tab" class="tab">
+  <h3>Tất cả bài viết</h3>
+  <div id="posts"></div>
+  <button onclick="showTab('post-create')">Đăng bài mới</button>
+</div>
+
+<div id="post-create" class="tab">
+  <h3>Viết bài mới</h3>
+  <input id="title" placeholder="Tiêu đề bài viết" />
+  <textarea id="content" rows="4" placeholder="Nội dung..."></textarea>
+  <button onclick="post()">Đăng bài</button>
+</div>
+
+<div id="settings-tab" class="tab">
+  <h3>Cài đặt</h3>
+  <input id="new-avatar" type="file" onchange="updateAvatar(event)" />
+  <button onclick="saveSettings()">Lưu cài đặt</button>
+</div>
+
+<div id="edit-tab" class="tab">
+  <h3>Chỉnh sửa thông tin</h3>
+  <input id="new-email" placeholder="Email mới" />
+  <button onclick="updateEmail()">Cập nhật Email</button>
+</div>
+
+<!-- Toast thông báo -->
+<div id="toast" class="toast">Thông báo!</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSnKjwZcYtxNP6MPbJhwHnYzpMcInUFIM",
+    authDomain: "my-blog-d10de.firebaseapp.com",
+    projectId: "my-blog-d10de",
+    storageBucket: "my-blog-d10de.firebasestorage.app",
+    messagingSenderId: "1040033908209",
+    appId: "1:1040033908209:web:6a93371ba83d784b9e3050",
+    measurementId: "G-4HHYC89RRV"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // Thêm Toast thông báo
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.innerText = message;
+    toast.style.display = "block";
+    setTimeout(() => toast.style.display = "none", 3000);
+  }
+
+  // Chuyển tab
+  function showTab(tab) {
+    const tabs = document.querySelectorAll(".tab");
+    tabs.forEach(t => t.classList.remove("active"));
+    document.getElementById(`${tab}-tab`).classList.add("active");
+  }
+
+  // Đăng ký
+  function register() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => {
+        showToast("Đăng ký thành công!");
+        showTab('posts');
+      })
+      .catch(err => showToast(err.message));
+  }
+
+  // Đăng nhập
+  function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        showToast("Đăng nhập thành công!");
+        showTab('posts');
+        loadPosts();
+      })
+      .catch(err => showToast(err.message));
+  }
+
+  // Đăng bài
+  function post() {
+    const title = document.getElementById("title").value.trim();
+    const content = document.getElementById("content").value.trim();
+    if (!title || !content) return alert("Không được để trống");
+
+    db.collection("posts").add({
+      title,
+      content,
+      author: auth.currentUser.email,
+      created: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
+      showTab('posts');
+    });
+  }
+
+  // Hiển thị bài viết
+  function loadPosts() {
+    db.collection("posts").orderBy("created", "desc").onSnapshot(snapshot => {
+      const postsDiv = document.getElementById("posts");
+      postsDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `
+          <div class="post-header">
+            <img src="${p.authorPhoto || 'https://via.placeholder.com/40'}" alt="Avatar">
+            <span>${p.author}</span>
+          </div>
+          <h4>${p.title}</h4>
+          <p>${p.content}</p>
+        `;
+        postsDiv.appendChild(div);
+      });
+    });
+  }
+
+  // Cập nhật ảnh đại diện
+  function updateAvatar(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const storageRef = storage.ref().child('avatars/' + auth.currentUser.uid);
+      storageRef.put(file).then(() => {
+        storageRef.getDownloadURL().then(url => {
+          auth.currentUser.updateProfile({ photoURL: url });
+          showToast("Cập nhật ảnh đại diện thành công!");
+        });
+      });
+    }
+  }
+
+  // Lưu cài đặt
+  function saveSettings() {
+    showToast("Cài đặt đã được lưu!");
+  }
+
+  // Cập nhật email
+  function updateEmail() {
+    const newEmail = document.getElementById("new-email").value;
+    auth.currentUser.updateEmail(newEmail).then(() => {
+      showToast("Email đã được cập nhật!");
+    }).catch(err => showToast(err.message));
+  }
+
+  // Đăng xuất
+  function logout() {
+    auth.signOut().then(() => {
+      showTab('auth');
+    });
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      showTab('posts');
+      loadPosts();
+    } else {
+      showTab('auth');
+    }
+  });
+</script>
+
+</body>
+</html>

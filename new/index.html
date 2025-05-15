@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Project</title>
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Thanh trạng thái -->
+    <div class="status-bar">
+      <div class="time" id="time">00:00</div>
+      <div class="battery">
+        <div>100%</div>
+        <div class="battery-icon"></div>
+      </div>
+    </div>
+
+    <!-- Camera -->
+    <div class="camera"></div>
+    
+    <!-- Màn hình chính -->
+    <div class="screen home-screen active" id="home">
+      <div class="app" data-target="app1">T x C</div>
+      <div class="app" data-target="app2">App 2</div>
+      <div class="app" data-target="app3">App 3</div>
+      <div class="app" data-target="app4">App 4</div>
+      <div class="app" data-target="app5">App 5</div>
+    </div>
+
+    <!-- Các tab ứng dụng -->
+    <div class="screen" id="app1">
+      <h2>app1</h2>
+      <p>app1</p>
+     
+      
+    </div>
+    <div class="screen" id="app2">
+      <h2>App 2</h2>
+      <p>Đây là nội dung của ứng dụng 2.</p>
+    </div>
+    <div class="screen" id="app3">
+      <h2>App 3</h2>
+      <p>Đây là nội dung của ứng dụng 3.</p>
+    </div>
+    <div class="screen" id="app4">
+      <h2>App 4</h2>
+      <p>Đây là nội dung của ứng dụng 4.</p>
+    </div>
+    <div class="screen" id="app5">
+      <h2>App 5</h2>
+      <p>Đây là nội dung của ứng dụng 5.</p>
+    </div>
+    
+
+    <!-- Nút home -->
+    <div class="home-button" id="homeButton"></div>
+  </div>
+
+  <script>
+    // Xử lý khi ấn vào app
+    const apps = document.querySelectorAll('.app');
+    const screens = document.querySelectorAll('.screen');
+    const homeButton = document.getElementById('homeButton');
+
+    apps.forEach(app => {
+      app.addEventListener('click', () => {
+        const targetId = app.getAttribute('data-target');
+        screens.forEach(screen => screen.classList.remove('active'));
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    // Xử lý khi ấn nút home
+    homeButton.addEventListener('click', () => {
+      screens.forEach(screen => screen.classList.remove('active'));
+      document.getElementById('home').classList.add('active');
+    });
+
+    // Cập nhật giờ
+    function updateTime() {
+      const timeElement = document.getElementById('time');
+      const currentTime = new Date();
+      const hours = currentTime.getHours().toString().padStart(2, '0');
+      const minutes = currentTime.getMinutes().toString().padStart(2, '0');
+      timeElement.textContent = `${hours}:${minutes}`;
+    }
+
+    // Cập nhật giờ mỗi phút
+    setInterval(updateTime, 1000);
+    updateTime(); // Cập nhật giờ ngay khi tải trang
+  </script>
+</body>
+</html>

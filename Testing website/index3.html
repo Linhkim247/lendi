@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini Blog</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f8f8f8; }
+
+    /* Styling for form and buttons */
+    input, textarea, button {
+      width: 100%; margin: 5px 0; padding: 10px;
+      border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    button:hover, input:hover, textarea:hover {
+      background-color: #2d89ef; color: white; cursor: pointer;
+    }
+
+    .post {
+      background: white; padding: 10px; margin: 10px 0;
+      border-left: 5px solid #2d89ef; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Popup for alerts */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      z-index: 1000;
+      max-width: 400px;
+      width: 100%;
+    }
+    .popup button {
+      background-color: #2d89ef; color: white; border: none;
+      padding: 10px 20px; border-radius: 10px; cursor: pointer;
+    }
+    .popup button:hover { background-color: #1e60b1; }
+
+    .popup-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5); z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Mini Blog</h2>
+
+<div id="auth">
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="register()">Đăng ký</button>
+  <button onclick="login()">Đăng nhập</button>
+</div>
+
+<div id="main" style="display:none;">
+  <p id="welcome"></p>
+  <button onclick="logout()">Đăng xuất</button>
+
+  <h3>Viết bài mới</h3>
+  <input id="title" placeholder="Tiêu đề bài viết" />
+  <textarea id="content" rows="4" placeholder="Nội dung..."></textarea>
+  <button onclick="post()">Đăng bài</button>
+
+  <h3>Tất cả bài viết</h3>
+  <div id="posts"></div>
+</div>
+
+<!-- Popup for messages -->
+<div class="popup-overlay" id="popup-overlay"></div>
+<div class="popup" id="popup">
+  <p id="popup-message"></p>
+  <button onclick="closePopup()">Đóng</button>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSnKjwZcYtxNP6MPbJhwHnYzpMcInUFIM",
+    authDomain: "my-blog-d10de.firebaseapp.com",
+    projectId: "my-blog-d10de",
+    storageBucket: "my-blog-d10de.firebasestorage.app",
+    messagingSenderId: "1040033908209",
+    appId: "1:1040033908209:web:6a93371ba83d784b9e3050",
+    measurementId: "G-4HHYC89RRV"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const titleInput = document.getElementById("title");
+  const contentInput = document.getElementById("content");
+  const authDiv = document.getElementById("auth");
+  const main = document.getElementById("main");
+  const welcome = document.getElementById("welcome");
+  const posts = document.getElementById("posts");
+
+  function showPopup(message) {
+    document.getElementById("popup-message").innerText = message;
+    document.getElementById("popup-overlay").style.display = "block";
+    document.getElementById("popup").style.display = "block";
+  }
+
+  function closePopup() {
+    document.getElementById("popup-overlay").style.display = "none";
+    document.getElementById("popup").style.display = "none";
+  }
+
+  function register() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => showPopup("Đăng ký thành công"))
+      .catch(err => showPopup(err.message));
+  }
+
+  function login() {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => showPopup("Đăng nhập thành công"))
+      .catch(err => showPopup(err.message));
+  }
+
+  function logout() {
+    auth.signOut().then(() => showPopup("Đăng xuất thành công"));
+  }
+
+  function post() {
+    const title = titleInput.value.trim();
+    const content = contentInput.value.trim();
+    if (!title || !content) return showPopup("Không được để trống");
+
+    db.collection("posts").add({
+      title,
+      content,
+      author: auth.currentUser.email,
+      created: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      titleInput.value = "";
+      contentInput.value = "";
+    });
+  }
+
+  function loadPosts() {
+    db.collection("posts").orderBy("created", "desc").onSnapshot(snapshot => {
+      posts.innerHTML = "";
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `<h4>${p.title}</h4><p>${p.content}</p><small>by ${p.author} | ${new Date(p.created.seconds * 1000).toLocaleString()}</small>`;
+        if (p.author === auth.currentUser.email) {
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "Xóa bài";
+          deleteBtn.onclick = () => deletePost(doc.id);
+          div.appendChild(deleteBtn);
+        }
+        posts.appendChild(div);
+      });
+    });
+  }
+
+  function deletePost(postId) {
+    db.collection("posts").doc(postId).delete()
+      .then(() => showPopup("Bài viết đã được xóa"))
+      .catch(err => showPopup("Lỗi khi xóa bài viết: " + err.message));
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      authDiv.style.display = "none";
+      main.style.display = "block";
+      welcome.innerText = "Chào, " + user.email;
+      loadPosts();
+    } else {
+      authDiv.style.display = "block";
+      main.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
